@@ -1,0 +1,30 @@
+---
+title: "Leaflet"
+author: "Logan Parker"
+date: "11/2/2020"
+output: html_document
+---
+
+```{r load-libraries, echo=FALSE,message=FALSE}
+library(tidyverse)
+library(leaflet)
+library(htmltools)
+```
+
+```{r ms-schools}
+msSchools <- read.csv(textConnection(
+  "name, mascot, lat, long
+  Ole Miss, Rebels, 34.364887, -89.537943
+  MS State, Bulldogs, 33.455354, -88.794359
+  Southern Miss, Golden Eagles, 31.329593, -89.333381"
+))
+#I made the font size of the name 2 instead of 1 like the instrucitons asked because the sample output looked like this. 
+schoolLabel <- sprintf("<font color ='blue'> <font size = '2'><b>%s<br /></b></font>%s</font>", msSchools$name, msSchools$mascot) %>%
+  lapply(htmltools::HTML)
+
+msSchools %>%
+  leaflet(options=leafletOptions(zoomSnap=0.1)) %>%
+  setView(lng=-89.3985,lat=32.3547, zoom=5.5) %>%
+  addTiles() %>%
+  addMarkers(~long,~lat, label=msSchools$name, popup = schoolLabel)
+```

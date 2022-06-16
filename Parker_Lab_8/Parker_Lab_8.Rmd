@@ -1,0 +1,80 @@
+---
+title: "Parker_Lab_8"
+author: "Logan Parker"
+date: "11/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-libraries,echo=FALSE,message=FALSE}
+library(tidyverse) 
+library(htmlwidgets)
+library(rmarkdown) 
+library(htmltools)
+library(maps) 
+library(leaflet)
+library(kableExtra)
+library(tinytex) 
+```
+![](img/logo.png)
+
+```{r center-table, echo = FALSE}
+locations <- tibble(Location = c("Midtown", "Downtown", "Summer","Poplar","Capitol View"), Address = c("2249 Central Ave; Memphis TN 38104", "147 E Butler Ave; Memphis TN 38102", "4375 Summer Ave; Memphis TN 38122","6201 Poplar Ave; Memphis TN 38119","408 11th Ave N; Nashville TN 37203"), Phone = c("901.272.9377","901.672.7760", "901.417.7962
+","901.417.7962","615.610.3444
+"))
+
+locations %>%
+  kable(align = "c") %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = FALSE) %>%
+  row_spec(0, background = "#18488C", color = "white", align ="c") %>%
+  row_spec(1:5, color = "#18488C", align = "c")
+
+
+```
+## GO WHERE THE LOCALS GO
+Memphians know great BBQ. And since it opened in 2002, Central BBQ has been ranked as the number one spot for BBQ in Memphis. The secrets to Central’s success?
+
+---
+
+## Fall-off-the-Bone Meat
+You might have heard us say, “Smoke is Our Sauce.” That’s because we live in the hardwood capital of the world and use hickory and pecan woods, along with our intricate dry rub and a whole lot of patience, to craft the most tender, delicious piece of meat you’ve ever eaten— with or without the sauce.
+
+---
+
+## Southern Hospitality
+We firmly believe even the best food falls flat without great hospitality. We’ll serve anyone hungry for BBQ and we’ll do it with the same generosity we would our best friends.
+
+---
+
+## Good Times
+We take our BBQ seriously— but that’s where the serious stops around here. At Central BBQ, we encourage our guests to unwind, get messy, and most importantly, savor their time with us.
+
+## Try One Of Our Four Memphis Locations
+
+```{r central-locations, echo=FALSE}
+central <- read.csv(textConnection(
+  "Location, Address, Phone, Long, Lat
+  Midtown,2249 Central Ave; Memphis TN 38104,901.272.9377 ,-89.987081,35.125933
+  Downtown,147 E Butler Ave; Memphis TN 38102,901.672.7760,-90.057134,35.134117
+  Summer,4375 Summer Ave; Memphis TN 38122,901.417.7962,-89.915087,35.148614
+  Poplar,6201 Poplar Ave; Memphis TN 38119,901.417.7962,-89.856992,35.101341
+  Capitol View,408 11th Ave N; Nashville TN 37203,615.610.3444 ,-86.790863,36.163270"
+))
+
+centralLabel <- sprintf("<b>%s</b><br />%s<br />%s",
+                        central$Location,central$Address,central$Phone)%>%
+  lapply(htmltools::HTML)
+```
+
+```{r memphis-nashville, echo=FALSE}
+central %>%
+  leaflet(options = leafletOptions(zoomSnap=0.1)) %>%
+  setView(lng = -90.044477, lat = 35.190570, zoom = 11) %>%
+  addTiles() %>%
+  addMarkers(~Long, ~Lat, popup = centralLabel, label = centralLabel)
+```
+
