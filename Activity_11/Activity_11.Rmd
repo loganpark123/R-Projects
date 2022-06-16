@@ -1,0 +1,68 @@
+---
+title: "Unit 11 Activity"
+author: "Logan Parker"
+date: "10/26/2020"
+output: pdf_document
+---
+# US Colleges
+
+
+```{r load-libraries, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(RColorBrewer)
+library(tinytex)
+```
+
+```{r load-college, echo=FALSE,message=FALSE,warning=FALSE}
+college <-  read_csv("data/college.csv", col_names = TRUE)
+
+college <- college %>%
+  mutate(state = as.factor(state),
+         region = as.factor(region),
+         highest_degree = as.factor(highest_degree),
+         control = as.factor(control),
+         gender = as.factor(gender),
+         loan_default_rate = as.numeric(loan_default_rate)) %>%
+  na.omit
+
+```
+
+### SAT Average v. Tuition
+
+```{r scatterplot-college, echo=FALSE}
+college %>%
+  ggplot() +
+  geom_point(mapping = aes(x=tuition,
+                           y=sat_avg, 
+                           color = tuition,
+                           #size = tuition,
+  ),
+  alpha = 0.25) +
+  scale_color_distiller(palette="Dark2") +
+  labs("SAT Average by Tuition",
+       x = "Tuition",
+       y = "SAT Average")
+
+```
+
+
+
+### College Tuituion of Public v. Private Institutions 
+
+```{r histogram-tuition, message=FALSE, echo=FALSE}
+college %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = tuition,
+                               fill = control))
+
+```
+
+### SAT Average of Public v. Private Institutions
+
+```{r histogram-sat, message=FALSE, echo=FALSE}
+college %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = sat_avg,
+                               fill = control))
+
+```

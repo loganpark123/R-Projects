@@ -1,0 +1,186 @@
+---
+title: "Final Project"
+author: "Logan Parker"
+date: "11/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE,echo=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+#loading in all of the necessary r packages
+library(tidyverse)
+library(leaflet)
+library(lubridate)
+library(usmap)
+library(cowplot)
+library(geojsonio)
+library(htmltools)
+```
+
+## Question 1
+### Can the number of prisoners in a state be used to predict how safe the state is?
+
+The following graphs show the prisoner count by state and then the prisoner count adjusted for population.
+The graph for raw number of prisoners in the state looks almost identical to the graph that shows the raw number of 
+violent crimes in that state. Further exploring this connection with a scatter plot we can see that the number of prisoners in a state
+is almost perfectly coorrelated to the number of violent crimes.
+```{r prisoner,message=FALSE}
+#Loading in the crime dataset and wrangling the states to match the us_map package
+crime <- read_csv("data/crime_and_incarceration_by_state.csv")
+crime <- crime %>%
+  rename("state" = jurisdiction) %>%
+  mutate(state = tolower(state))
+
+#creating a statemap and renaming the states to match the above crime dataset
+state_map <- us_map("states") %>%
+  rename(state = full) %>%
+  mutate(state = tolower(state))
+#Here I am filtering the dataset to only include 2016, the newest, data and creating a prisoner_map with only state, prisoner count, population, and crime by population and then joining the crime and statemap on the previously adjusted state variable.
+prisoner_map <- crime %>%
+  filter(year == 2016, state != "federal") %>%
+  group_by(state,prisoner_count,state_population)%>%
+  summarise(crimePop = prisoner_count/state_population)%>%
+  left_join(state_map,.,on = "state")
+#This section is where the mapping of prison_map takes place. The map is filled by basic prisoner count on a scale from yellow to red
+prisoner_map %>%
+  ggplot(mapping = aes(x = x,
+                       y = y,
+                       group = group,
+                       fill = prisoner_count))+
+  geom_polygon(color = "gray") +
+  coord_equal() +
+  theme_map()+
+  scale_fill_distiller(palette = "YlOrRd",direction = 1)+
+  labs(title = "Number of Prisoners by State 2016",fill = "Prisoner Count")
+#This section maps prison_map again, but this time the map is filled by prisoner count adjusted for population of the state on a scale from yellow to red
+prisoner_map %>%
+  ggplot(mapping = aes(x = x,
+                       y = y,
+                       group = group,
+                       fill = crimePop))+
+  geom_polygon(color = "gray") +
+  coord_equal() +
+  theme_map()+
+  scale_fill_distiller(palette = "YlOrRd",direction = 1)+
+  labs(title = "Prisoners vs Population 2016",fill = element_blank())
+
+```
+
+## Question 2
+### Are the number of violent crimes correlated to the total population of an area?
+
+The following graphs show the raw number of violent crimes in a state and the number of violent crimes per capita. It can be seen
+that the number of violent crimes is very closely coorrelated to the total population of an area.
+```{r violent, message=FALSE}
+#Here I am creating a map datatable that includes map data as well as population and violent crime total
+violent_map <- crime %>%
+  filter(year == 2016, state != "federal") %>%
+  group_by(state,state_population,violent_crime_total)%>%
+  summarise(violentPop = violent_crime_total/state_population)%>%
+  left_join(state_map,.,on = "state")
+#The plotting of this data table where I just fill by violent crime total 
+violent_map %>%
+  ggplot(mapping = aes(x = x,
+                       y = y,
+                       group = group,
+                       fill = violent_crime_total))+
+  geom_polygon(color = "gray") +
+  coord_equal() +
+  theme_map()+
+  scale_fill_distiller(palette = "YlOrRd",direction = 1)+
+  labs(title = "Violent Crime by State 2016",fill = "Violent Crimes")
+#This plot is filled using the violent crime adjusted for population
+violent_map %>%
+  ggplot(mapping = aes(x = x,
+                       y = y,
+                       group = group,
+                       fill = violentPop))+
+  geom_polygon(color = "gray") +
+  coord_equal() +
+  theme_map()+
+  scale_fill_distiller(palette = "YlOrRd",direction = 1)+
+  labs(title = "Violent Crimes vs Population 2016",fill = element_blank())
+#Here, I am creating a subset of crime that only includes 2016 data
+prisoners16 <- crime %>%
+  filter(year == 2016, state != "federal")
+#This is the scatter plot that shows the coorrelation coefficient in the title for population and violent crime
+prisoners16%>%
+  ggplot(mapping = aes(state_population,violent_crime_total))+
+  geom_point()+
+  labs(x="Population",y="Violent Crimes",title = paste("Coorelation of population and Violent Crime:",cor(prisoners16$state_population,prisoners16$violent_crime_total)))
+
+#This is the scatter plot that shows the coorrelation coefficient in the title for prisoner count and violent crime
+prisoners16%>%
+  ggplot(mapping = aes(prisoner_count,violent_crime_total))+
+  geom_point()+
+  labs(x="Prisoner Count",y="Violent Crimes",title = paste("Coorelation of Prisoner Count and Violent Crime:",cor(prisoners16$prisoner_count,prisoners16$violent_crime_total)))
+
+prisoners16%>%
+  ggplot(mapping = aes(prisoner_count,violent_crime_total/state_population))+
+  geom_point()+
+  labs(x="Prisoner Count",y="Violent Crimes per capita",title = paste("Coorelation of Prisoner Count and Violent Crime per capita:",cor(prisoners16$prisoner_count,(prisoners16$violent_crime_total/prisoners16$state_population))))
+
+prisoners16%>%
+  ggplot(mapping = aes(state_population,violent_crime_total/state_population))+
+  geom_point()+
+  labs(x="Population",y="Violent Crimes per capita",title = paste("Coorelation of population and Violent Crime per capita:",cor(prisoners16$state_population,(prisoners16$violent_crime_total/prisoners16$state_population))))
+
+```
+
+## Bar
+
+```{r bar, message=FALSE}
+#Here I am creating a barplot to show the number of prisoners in each state and reordering it to be in descending order
+prisoners16 %>%
+  ggplot(mapping = aes(x=reorder(state,prisoner_count),y=prisoner_count, fill=state))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  guides(fill=FALSE)+
+  labs(title = "Number of Prisoners by State in 2016",x=element_blank(),y="Prisoner Count")
+
+```
+
+## Summary of the information
+
+```{r leaflet, message=FALSE}
+#this geojson file has the outlines of the states needed to make the highlight funcion work properly
+states <- geojsonio::geojson_read("data/us-states.json",what = "sp")
+#this line creates a variable that represents the number of prisoners per 1000 citizens
+prisoners16 <- prisoners16 %>%
+  mutate(prisonPop = (prisoner_count/state_population *1000),
+         violentPop = (violent_crime_total/state_population * 1000))
+#Here I generate labels for the states when they are moused over
+labels <- sprintf(
+  "<strong>%s</strong><br/>%d total prisoners<br />Total population: %d <br />Prisoners per 1000 Citizens: %g<br />Violent Crimes per 1000 Citizens: %g",
+  prisoners16$state, prisoners16$prisoner_count, prisoners16$state_population, prisoners16$prisonPop, prisoners16$violentPop
+) %>% lapply(htmltools::HTML)
+#this line defines a custom pallet which allows me to fill the polygons by prisonPop
+pal <- colorBin("YlOrRd", domain = prisoners16$violentPop)
+#Here is my leaflet that is interactive and shows the labels produced. My mapbox token is used to allow the better looking mapbox package to be used.
+leaflet(states) %>%
+  setView(-96, 37.8, 4) %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.light",
+    accessToken = "pk.eyJ1IjoibG9nYW5wYXJrMTIzIiwiYSI6ImNraGk3aDczeDA3YmwyeHM4bG44bG81cTAifQ.Y_t7mMxNVcc6TMuy5tfccw"))%>%
+  addPolygons(
+    fillColor = ~pal(prisoners16$violentPop),
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")
+    ) %>%
+  addLegend(pal = pal, values = ~prisoners16$violentPop, opacity = 0.7, title = "Violent Crimes per 1000 citizens",
+            position = "bottomright")
+```
